@@ -1,0 +1,33 @@
+<!-- From Lab 10, incomplete, need app.js calls, change from author to product info, ctrl-f "updateAuthor" -->
+<%- include('partials/header'); -%> 
+    </head>
+    
+    <body>
+        
+        <h1>Update New Product</h1>
+        
+        <form method="POST">
+            Product Name: <input type="text" name="productName" value="<%=productInfo.productName %>"> <br>
+            
+            Category: <input type="text" name="category" value="<%=productInfo.category %>"> <br>
+            <!-- TODO: Add Remaining Fields -->
+            Description: <textarea name="description" cols="50" height="20"><%=productInfo.description %></textarea>
+            <br>
+            Amount Remaining: <input type="number" name="amtRemaining" value="<%=productInfo.amtRemaining %>"> <br> <!-- int -->
+            Price: <input type="number" name="price" value="<%=productInfo.price %>"> <br> <!-- double -->
+            Image of Store URL: <input type="text" name="imageURL" value="<%=productInfo.imageURL %>"> <br> 
+            
+            <input type="hidden" name="productID" value="<%=productInfo.productID %>" > <br>
+            
+            <br>
+            <button> Update Product! </button>
+            
+            <%= typeof(message) != "undefined"?message:"" %>
+        </form>
+        <br>
+        <form action="/admin">
+            <button> Back to Admin Panel </button>
+        </form>
+        
+    </body>
+</html>

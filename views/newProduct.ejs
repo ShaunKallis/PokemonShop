@@ -1,0 +1,29 @@
+<!-- From Lab 10, incomplete, need app.js calls, change to product info, ctrl-f "newAuthor" -->
+<%- include('partials/header'); -%>
+    </head>
+    
+    <body>
+        
+        <h1>Adding a New Product</h1>
+        
+        <form method="POST">
+            Product Name: <input type="text" name="productName"> <br>
+            
+            Category: <input type="text" name="category"> <br>
+            <!-- TODO: Add Remaining Fields -->
+            Description: <textarea name="description" cols="50" height="20"> </textarea>
+            <br>
+            Amount Remaining: <input type="number" name="amtRemaining"> <br> <!-- int -->
+            Price: <input type="number" name="price"> <br> <!-- double -->
+            Image of Store URL: <input type="text" name="imageURL"> <br> 
+            
+            <br>
+            <button> Add Product! </button>
+            <%= typeof(message) != "undefined"?message:"" %>
+        </form>
+        <br>
+        <form action="/admin">
+            <button> Back to Admin Panel </button>
+        </form>
+    </body>
+<%- include('partials/footer'); -%>
