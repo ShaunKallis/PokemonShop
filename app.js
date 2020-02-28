@@ -62,7 +62,7 @@ app.get("/admin", isAdminAuthenticated, async function(req, res){
 });
 
 app.post("/adminLoginProcess", function(req, res) {
-     if (req.body.username == "admin" && req.body.password == "secret") {
+     if (req.body.username == "admin" && req.body.password == "admin") {
        req.session.adminAuthenticated = true;
        res.send({"loginSuccess":true});
     } else {
@@ -71,7 +71,7 @@ app.post("/adminLoginProcess", function(req, res) {
 });
 
 app.post("/userLoginProcess", function(req, res) {
-     if (req.body.username == "user1" && req.body.password == "password1") {
+     if (req.body.username == "user" && req.body.password == "user") {
        req.session.userAuthenticated = true;
        res.send({"loginSuccess":true});
     } else {

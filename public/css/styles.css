@@ -24,6 +24,17 @@ table
     margin-right:auto;
 }
 
+.jumbotron{
+    background-image: url("../img/pokeballs01.jpg");
+    background-repeat:no-repeat;
+    background-position: center center;
+}
+
+.btn-outline-danger{
+    background-color: white;
+    color:black;
+}
+
 h1 {
     color:royalblue;
     background-color:black;
