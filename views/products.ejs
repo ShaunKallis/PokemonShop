@@ -46,11 +46,14 @@
         <% records.forEach( function(record){ %> 
         
             <img src = <%= record.imageURL %> width = 300px height = 250px> <br>
-            <i><%= record.productName %></i> <br>
-            Description: <%=record.description%><br>
-            Category: <%=record.category%><br>
+            <i><%= record.name %></i> <br>
+            Number: <%=record.pokemonID%><br>
+            Height: <%=record.height%><br>
+            Weight: <%=record.weight%><br>
+            Quantity Available: <%=record.quantity%><br>
+            Types: <%=record.type1%><br>
             Price: $<%=record.price%><br>
-            <button id="<%= record.productID %>" class="add"> Add to cart </button>
+            <button id="<%= record._id %>" class="add"> Add to cart </button>
             <br><br>
         <% })  %>
         

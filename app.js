@@ -1,7 +1,14 @@
-const express = require("express");
 const mysql = require("mysql")
+
+const express = require("express");
 const app = express();
 const session = require('express-session');
+
+const MongoClient = require('mongodb').MongoClient;
+const uri = "mongodb+srv://mRidge:duzSEpQQh4fTIqSm@cluster0-2dcbj.mongodb.net/test?retryWrites=true&w=majority";
+const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true});
+client.connect();
+
 
 app.set("view engine", "ejs");
 app.use(express.static("public")); //folder for images, css, js
@@ -11,7 +18,8 @@ app.use(express.urlencoded()); // used to parse data sent using the POST method
 app.use(session({ 
     secret: 'keyboard cat', 
     cookie: { maxAge: 6000000 }}))
-    
+
+
 app.use(myMiddleware);
 function myMiddleware(req, res, next){
     console.log(new Date());
@@ -390,48 +398,60 @@ function getProductInfo(productID){
     });//promise
     
 }
-function getProduct(query){
-    
-    let keyword = query.keyword;
-    let category = query.category;
-    let price = query.price;
-    let conn = dbConnection();
-    
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-           if (err) throw err;
-           console.log("Connected!");
-        
-           let params = [];
-        
-           let sql = `SELECT * FROM products
-                      WHERE 
-                      productName LIKE '%${keyword}%'`; //might use description instead of product
-        
-           if (query.category) { //user selected a category
-              sql += " AND category = ?"; //To prevent SQL injection, SQL statement shouldn't have any product.
-              params.push(query.category); 
-           }
-            
-           if (query.price) { //user selected a category
-              sql += " AND price = ?"; //To prevent SQL injection, SQL statement shouldn't have any product.
-              params.push(query.price);
-           }
-           
-           
-        
-           console.log("SQL:", sql)
-           conn.query(sql, params, function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-           });
-        
-        });//connect
-    });//promise
-    
+async function getProduct(){console.log(`o`);
+    const result = await client.db("pokemondb").collection("pokemon").find().toArray();
+    console.log(result);
+    return result;
 }//getproduct
+
+// async function getProduct(query){
+    
+//     console.log(`o`);
+//     const result = await client.db("pokemondb").collection("pokemon").find().toArray();
+//     // return result;
+//     console.log(`w`);
+//     console.log(result);
+    
+//     let keyword = query.keyword;
+//     let category = query.category;
+//     let price = query.price;
+//     let conn = dbConnection();
+    
+//     return new Promise(function(resolve, reject){
+//         conn.connect(function(err) {
+//           if (err) throw err;
+//           console.log("Connected!");
+        
+//           let params = [];
+        
+//           let sql = `SELECT * FROM products
+//                       WHERE 
+//                       productName LIKE '%${keyword}%'`; //might use description instead of product
+        
+//           if (query.category) { //user selected a category
+//               sql += " AND category = ?"; //To prevent SQL injection, SQL statement shouldn't have any product.
+//               params.push(query.category); 
+//           }
+            
+//           if (query.price) { //user selected a category
+//               sql += " AND price = ?"; //To prevent SQL injection, SQL statement shouldn't have any product.
+//               params.push(query.price);
+//           }
+           
+           
+        
+//           console.log("SQL:", sql)
+//           conn.query(sql, params, function (err, rows, fields) {
+//               if (err) throw err;
+//               //res.send(rows);
+//               conn.end();
+//               resolve(rows);
+//           });
+        
+//         });//connect
+//     });//promise
+    
+// }//getproduct
 
 
 function getCategories(){
@@ -484,7 +504,7 @@ function getCart(){
 
 //values in red must be updated
 function dbConnection(){
-   let conn = mysql.createConnection({
+  let conn = mysql.createConnection({
                 host: "cst336db.space",
                 user: "cst336_dbUser7", // cst336_dbUser
                 password: "fo14c3",    // secret
