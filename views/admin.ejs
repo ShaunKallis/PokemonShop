@@ -34,9 +34,9 @@
         
         <h3> Products</h3>
         <% productList.forEach(function(productList){ %>
-            [<a href="/updateProduct?productID=<%= productList.productID %>">UPDATE</a>] 
-            [<a onclick="deleteConfirm()" class="removeProduct" href="/deleteProduct?productID=<%= productList.productID %>">DELETE</a>] 
-            <%= productList.productName %> <br>
+            [<a href="/updateProduct?pokemonName=<%= productList.name %>">UPDATE</a>] 
+            [<a onclick="deleteConfirm()" class="removeProduct" href="/deleteProduct?pokemonName=<%= productList.name %>">DELETE</a>] 
+            <%= productList.name %> <%= productList.pokemonID %> <br>
         <% }) %>
     </body>
 </html>
