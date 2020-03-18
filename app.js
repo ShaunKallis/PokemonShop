@@ -62,9 +62,9 @@ app.get("/adminLogin", async function(req, res)
 app.get("/admin", isAdminAuthenticated, async function(req, res){
     console.log("authenticated: ", req.session.authenticated);
     if (req.session.adminAuthenticated){ 
-        let productList = await getproductList();
+        let productList = await getProductList();
         res.render("admin", {"productList":productList});                
-    }else{                                    //if user hasn't authenticated
+    }else{                         //if user hasn't authenticated
         res.render("adminLogin");                  //send them to the login screen
     }
 });
@@ -110,43 +110,37 @@ app.get("/addProduct", isAdminAuthenticated, function(req, res){
     }
 });
 app.post("/addProduct", isAdminAuthenticated, async function(req, res){
-    let rows = await insertProduct(req.body);
-    console.log(rows);
-    // res.send("First Name: " + req.body.firstName);  //When POST method info is stored in req.body
-    let message = "Product WAS NOT added to the database!";
-    if (rows.affectedRows > 0) {
-        message = "Product added to the database!";
-        res.render("newProduct", {"message":message});
-    }
+    const newPokemon = req.body;
+    const result = await client.db("pokemondb").collection("pokemon").insertOne(newPokemon);
+    console.log(result);
 });
 app.get("/updateProduct", isAdminAuthenticated, async function(req, res){
     if (req.session.adminAuthenticated){ 
-        let productInfo = await getProductInfo2(req.query.productID);
-        console.log(productInfo);
+        let productInfo = await getProductInfoAdmin(req.query.pokemonName);
+        console.log(`pokemon info: ${productInfo}`);
         res.render("updateProduct", {"productInfo":productInfo});
     }else{                                    //if user hasn't authenticated
         res.render("adminLogin");                  //send them to the login screen
     }
 });
 app.post("/updateProduct", isAdminAuthenticated, async function(req, res){
-    let rows = await updateProduct(req.body);
-    let productInfo = req.body;
-    console.log(rows);
-    // res.send("First Name: " + req.body.firstName);  //When POST method info is stored in req.body
-    let message = "Product WAS NOT updated to the database!";
-    if (rows.affectedRows > 0) {
-        message = "Product updated to the database!";
-        res.render("updateProduct", {"message":message, "productInfo":productInfo});
-    }
+    console.log(`Post for updateProduct`);
+    const updatedPokemon = req.body;
+    console.log(updatedPokemon);
+    const result = client.db("pokemondb").collection("pokemon").updateOne(
+        {name: updatedPokemon.name},
+        {$set: updatedPokemon}
+    );
+    console.log(`result for post: ${result}`);
 });
 app.get("/deleteProduct", isAdminAuthenticated, async function(req, res){
-    let rows = await deleteProduct(req.query.productID);
-    console.log(rows);
+    let result = await deleteProduct(req.query.pokemonName);
+    console.log(result);
     let message = "Product WAS NOT deleted!";
-    if (rows.affectedRows > 0) {
+    if (result.deletedCount > 0) {
         message = "Product successfully deleted!";   
         }
-    let productList = await getproductList();
+    let productList = await getProductList();
     res.render("admin", {"productList":productList});
 });
 
@@ -182,24 +176,14 @@ function insertProduct(body){
         });//connect
     });//promise
 }
-function getproductList(){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            let sql = `SELECT productName, productID 
-                        FROM products 
-                        ORDER BY productName`;
-            conn.query(sql, function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-           });
-        });//connect
-    });//promise
+
+async function getProductList(){
+    console.log(`getProductList`);
+    const result = await client.db("pokemondb").collection("pokemon").find().toArray();
+    console.log(`number of pokemon in cluster: ${result.length}`);
+    return result;
 }
+
 function addToCart(productID){
     let conn = dbConnection();
     return new Promise(function(resolve, reject){
@@ -219,68 +203,26 @@ function addToCart(productID){
         });//connect
     });//promise
 }
-function getProductInfo2(productID){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            let sql = `SELECT * 
-                        FROM products 
-                        WHERE productID = ?`;
-            conn.query(sql, [productID], function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              console.log("here: ", rows[0])
-              resolve(rows[0]); //QUERY RETURNS ONLY ONE RECORD
-           });
-        });//connect
-    });//promise
+
+async function getProductInfoAdmin(pokemonName){
+    console.log(`Name: ${pokemonName}`);
+    const result = await client.db("pokemondb").collection("pokemon").findOne({name : pokemonName});
+    console.log(`result: ${result}`);
+    return result;
 }
-function updateProduct(body){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            let sql = `UPDATE products 
-                        SET productName = ?, 
-                        description = ?,
-                        category = ?,
-                        amtRemaining = ?,
-                        price = ?,
-                        imageURL = ?
-                        WHERE productID = ?`;         //UPDATE HERE
-            let params = [body.productName, body.description, body.category, body.amtRemaining, body.price, body.imageURL, parseInt(body.productID)]; //in DB it's sex but on our site its gender
-            console.log(params);
-            conn.query(sql, params, function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-           });
-        });//connect
-    });//promise
+
+async function updateProduct(updatedPokemon){
+    const result = await client.db("pokemondb").collection("pokemon").updateOne(updatedPokemon);
+    console.log(`${result.matchedCount} document(s) matched the query criteria`);
+    console.log(`${result.modifiedCount} document(s) was/were updated`);
 }
-function deleteProduct(productID){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            let sql = `DELETE FROM products 
-                        WHERE productID = ?`;
-            let params = [productID]; 
-            conn.query(sql, params, function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-           });
-        });//connect
-    });//promise
+
+async function deleteProduct(pokemonName){
+    const result = await client.db("pokemondb").collection("pokemon").deleteOne({name: pokemonName});
+    console.log(`${result.deletedCount} pokemon was/were deleted`);
+    return result;
 }
+
 function clearCart(productID){
     let conn = dbConnection();
     return new Promise(function(resolve, reject){
@@ -345,9 +287,9 @@ app.get("/cart", isUserAuthenticated, async function(req, res){
 //   console.log(items);
   let total = 0;
   items.forEach(function(item){
-      total += item["price"]*item["quantity"]
+      total += item[1]*item[2]
   })
-  res.render("cart", {"items":items, "total":total});
+  res.render("cart", {"items":items[0], "total":total});
 
 });
 
@@ -361,7 +303,6 @@ app.get("/checkout", isUserAuthenticated, async function(req, res){
 
 // from lab 9 user side of page
 app.get("/products", isUserAuthenticated, async function(req, res){
-
   let rows = await getProduct(req.query);
   res.render("products", {"records":rows});
 
@@ -398,61 +339,12 @@ function getProductInfo(productID){
     });//promise
     
 }
-async function getProduct(){console.log(`o`);
+async function getProduct(){
+    console.log(`getProduct run`);
     const result = await client.db("pokemondb").collection("pokemon").find().toArray();
     console.log(result);
     return result;
 }//getproduct
-
-// async function getProduct(query){
-    
-//     console.log(`o`);
-//     const result = await client.db("pokemondb").collection("pokemon").find().toArray();
-//     // return result;
-//     console.log(`w`);
-//     console.log(result);
-    
-//     let keyword = query.keyword;
-//     let category = query.category;
-//     let price = query.price;
-//     let conn = dbConnection();
-    
-//     return new Promise(function(resolve, reject){
-//         conn.connect(function(err) {
-//           if (err) throw err;
-//           console.log("Connected!");
-        
-//           let params = [];
-        
-//           let sql = `SELECT * FROM products
-//                       WHERE 
-//                       productName LIKE '%${keyword}%'`; //might use description instead of product
-        
-//           if (query.category) { //user selected a category
-//               sql += " AND category = ?"; //To prevent SQL injection, SQL statement shouldn't have any product.
-//               params.push(query.category); 
-//           }
-            
-//           if (query.price) { //user selected a category
-//               sql += " AND price = ?"; //To prevent SQL injection, SQL statement shouldn't have any product.
-//               params.push(query.price);
-//           }
-           
-           
-        
-//           console.log("SQL:", sql)
-//           conn.query(sql, params, function (err, rows, fields) {
-//               if (err) throw err;
-//               //res.send(rows);
-//               conn.end();
-//               resolve(rows);
-//           });
-        
-//         });//connect
-//     });//promise
-    
-// }//getproduct
-
 
 function getCategories(){
     
@@ -479,28 +371,35 @@ function getCategories(){
     
 }//getCategories
 
-function getCart(){
+async function getCart(cartId){
+    // const result = await client.db("userdb").collection("carts").find(cartId);
+    const result = await client.db("userdb").collection("carts").find({_id: "5e71796d38d2f623fd9723ed"})
+    console.log(`getCart: ${result.item1}`);
+    return result;
+}
+
+// function getCart(){
     
-    let conn = dbConnection();
+//     let conn = dbConnection();
     
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-           if (err) throw err;
-           console.log("Connected!");
+//     return new Promise(function(resolve, reject){
+//         conn.connect(function(err) {
+//           if (err) throw err;
+//           console.log("Connected!");
         
-           let sql = `select productID, quantity, productName, price from users natural join cart natural join cartItems natural join products where userID = "2"`;
+//           let sql = `select productID, quantity, productName, price from users natural join cart natural join cartItems natural join products where userID = "2"`;
         
-           conn.query(sql, function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-           });
+//           conn.query(sql, function (err, rows, fields) {
+//               if (err) throw err;
+//               //res.send(rows);
+//               conn.end();
+//               resolve(rows);
+//           });
         
-        });//connect
-    });//promise
+//         });//connect
+//     });//promise
     
-}//getCart
+// }//getCart
 
 //values in red must be updated
 function dbConnection(){
@@ -512,8 +411,6 @@ function dbConnection(){
     }); //createConnection
     return conn;
 }
-
-
 
 //starting server
 app.listen(process.env.PORT, process.env.IP, function(){
