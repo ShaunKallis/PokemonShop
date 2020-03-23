@@ -2,6 +2,7 @@ const mysql = require("mysql")
 
 var sleep = require('sleep');
 
+const request = require("request");
 
 const express = require("express");
 const app = express();
@@ -139,9 +140,20 @@ app.get("/logout", function(req, res){
     req.session.destroy();
     res.redirect("/");   //taking user back to login screen
 });
-app.get("/addProduct", isAdminAuthenticated, function(req, res){
+app.get("/addProduct", isAdminAuthenticated, async function(req, res){
     if (req.session.adminAuthenticated){ 
-        res.render("newProduct");
+        // res.render("newProduct");
+        let keyword = "unown"; 
+        console.log(`keyword: ${req.query.keyword}`);
+        if(req.query.keyword != null ){
+            console.log(`a`);
+            if(req.query.keyword.localeCompare("") != 0){
+                console.log(`b`);
+                keyword = req.query.keyword;
+            }
+        }
+        let parsedData = await getPokemon(keyword); 
+        res.render("newProduct", {"parsedData":parsedData});
     }else{                                    //if user hasn't authenticated
         res.render("adminLogin");                  //send them to the login screen
     }
@@ -199,7 +211,7 @@ app.get("/adminStats", isAdminAuthenticated, function(req, res){
 
 // FUNCTIONS
 async function insertProduct(body){
-    if(await client.db("pokemondb").collection("pokemon").findOne({name: body.name})){
+    if(await client.db("pokemondb").collection("pokemon").findOne({name: { $regex : new RegExp(body.name, "i") }})){
         console.log(`${body.name} already in database`);
         return false;
     } else{
@@ -232,10 +244,14 @@ function addToCart(productID){
               //res.send(rows);
               conn.end();
               resolve(rows);
-           });
+          });
         });//connect
     });//promise
 }
+
+// async function addToCart(pokemonName, quantity){
+    
+// }
 
 async function createUser(username, password, email, bio){
     console.log(`createUser called`);
@@ -257,7 +273,7 @@ async function createUser(username, password, email, bio){
 
 async function getProductInfoAdmin(pokemonName){
     console.log(`Name: ${pokemonName}`);
-    const result = await client.db("pokemondb").collection("pokemon").findOne({"name" : pokemonName});
+    const result = await client.db("pokemondb").collection("pokemon").findOne({"name" : { $regex : new RegExp(pokemonName, "i") }});
     console.log(`result: ${result}`);
     return result;
 }
@@ -380,7 +396,7 @@ app.post("/index", function(req, res){
     var tempPass = req.body.password;
     var tempEmail = req.body.email;
     
-    //createUser(tempName, tempPass, tempEmail)
+    createUser(tempName, tempPass, tempEmail)
     //Redirect to Main Page
     res.redirect("/")
 })
@@ -477,6 +493,28 @@ async function getCart(cartId){
     const result = await client.db("userdb").collection("carts").find({_id: "5e71796d38d2f623fd9723ed"})
     console.log(`getCart: ${result.item1}`);
     return result;
+}
+
+function getPokemon(keyword){
+    console.log("function getPokemon called");
+    return new Promise( function(resolve, reject){
+        //request is run and other code after this block is run while waiting for a response
+        request('https://pokeapi.co/api/v2/pokemon/'+keyword,
+            function (error, response, body) {
+				console.log('error if any:', error); // Print the error if one occurred
+            // console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
+            // console.log('body:', body); // Print the HTML for the Google homepage.
+            //console.log(response.statusCode); //should be 200
+            if (!error && response.statusCode == 200){ //no errors in the request
+                let parsedData = JSON.parse(body); //converts plain text to json
+                resolve(parsedData);
+            } else {
+                reject(error);
+                console.log(response.statusCode); //should be 200
+                console.log(error); 
+            }
+        });//request
+    });
 }
 
 // function getCart(){
