@@ -1,5 +1,8 @@
 const mysql = require("mysql")
 
+var sleep = require('sleep');
+
+
 const express = require("express");
 const app = express();
 const session = require('express-session');
@@ -9,7 +12,6 @@ const uri = "mongodb+srv://mRidge:duzSEpQQh4fTIqSm@cluster0-2dcbj.mongodb.net/te
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true});
 client.connect();
 
-
 app.set("view engine", "ejs");
 app.use(express.static("public")); //folder for images, css, js
 app.use(express.urlencoded()); // used to parse data sent using the POST method
@@ -18,7 +20,6 @@ app.use(express.urlencoded()); // used to parse data sent using the POST method
 app.use(session({ 
     secret: 'keyboard cat', 
     cookie: { maxAge: 6000000 }}))
-
 
 app.use(myMiddleware);
 function myMiddleware(req, res, next){
@@ -39,6 +40,33 @@ function isUserAuthenticated(req, res, next){
         res.redirect('/userLogin');
     } else {
         next();
+    }
+}
+
+async function userLoginAttempt(username, password){
+    var result = await client.db("userdb").collection("users").findOne({
+        "username": username,
+        "password": password
+    });
+    console.log(`user found: ${result}`);
+    if(result != null){
+        return true;
+    } else{
+        return false;
+    }
+}
+
+async function adminLoginAttempt(username, password){
+    var result = await client.db("userdb").collection("users").findOne({
+        "username": username,
+        "password": password,
+        "admin": true
+    });
+    console.log(`admin found: ${result}`);
+    if(result != null){
+        return true;
+    } else{
+        return false;
     }
 }
 
@@ -70,21 +98,27 @@ app.get("/admin", isAdminAuthenticated, async function(req, res){
 });
 
 app.post("/adminLoginProcess", function(req, res) {
-     if (req.body.username == "admin" && req.body.password == "admin") {
-       req.session.adminAuthenticated = true;
-       res.send({"loginSuccess":true});
-    } else {
-       res.send(false);
-    }
+    adminLoginAttempt(req.body.username, req.body.password).then(result =>{
+        console.log(`result of login attempt: ${result}`);
+        if(result == true){
+            req.session.adminAuthenticated = true;
+            res.send({"loginSuccess":true});
+        } else {
+           res.send(false);
+        }
+    });
 });
 
 app.post("/userLoginProcess", function(req, res) {
-     if (req.body.username == "user" && req.body.password == "user") {
-       req.session.userAuthenticated = true;
-       res.send({"loginSuccess":true});
-    } else {
-       res.send(false);
-    }
+    userLoginAttempt(req.body.username, req.body.password).then(result =>{
+        console.log(`result of login attempt: ${result}`);
+        if(result == true){
+            req.session.userAuthenticated = true;
+            res.send({"loginSuccess":true});
+        } else {
+           res.send(false);
+        }
+    });
 });
 
 app.post("/addToCart", isUserAuthenticated, async function(req, res){
@@ -111,8 +145,12 @@ app.get("/addProduct", isAdminAuthenticated, function(req, res){
 });
 app.post("/addProduct", isAdminAuthenticated, async function(req, res){
     const newPokemon = req.body;
-    const result = await client.db("pokemondb").collection("pokemon").insertOne(newPokemon);
-    console.log(result);
+    const result = await insertProduct(newPokemon);
+    console.log(`Pokemon added: ${result}`);
+    if(!result){
+        console.log("Pokemon's name: " + newPokemon.name);
+        return res.redirect("updateProduct?pokemonName=" + newPokemon.name);
+    } 
 });
 app.get("/updateProduct", isAdminAuthenticated, async function(req, res){
     if (req.session.adminAuthenticated){ 
@@ -157,27 +195,19 @@ app.get("/adminStats", isAdminAuthenticated, function(req, res){
 
 
 // FUNCTIONS
-function insertProduct(body){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            let sql = `INSERT INTO products 
-                        (productName, category, description, amtRemaining, price, imageURL) 
-                        VALUES (?,?,?,?,?,?)`;            // UPDATE HERE
-            let params = [body.productName, body.category, body.description, body.amtRemaining, body.price, body.imageURL]; //in DB it's sex but on our site its gender
-            conn.query(sql, params, function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-           });
-        });//connect
-    });//promise
+async function insertProduct(body){
+    if(await client.db("pokemondb").collection("pokemon").findOne({name: body.name})){
+        console.log(`${body.name} already in database`);
+        return false;
+    } else{
+        const result = await client.db("pokemondb").collection("pokemon").insertOne(body);
+        console.log(`${body.name} inserted in database`);
+        return true;
+    }
 }
 
 async function getProductList(){
+    
     console.log(`getProductList`);
     const result = await client.db("pokemondb").collection("pokemon").find().toArray();
     console.log(`number of pokemon in cluster: ${result.length}`);
@@ -204,9 +234,27 @@ function addToCart(productID){
     });//promise
 }
 
+async function createUser(username, password, email, bio){
+    console.log(`createUser called`);
+    const result = await client.db("userdb").collection("users").findOne({"username": username});
+    if(result != null){
+        // do something to signify error creating account
+        console.log(`user found with username: ${username}`);
+    } else{
+        const result = await client.db("userdb").collection("users").insertOne({
+            "username": username, 
+            "password": password,
+            "email": email,
+            "bio": bio
+        });
+        console.log(`user created with username: ${username}`);
+    }
+    return result;
+}
+
 async function getProductInfoAdmin(pokemonName){
     console.log(`Name: ${pokemonName}`);
-    const result = await client.db("pokemondb").collection("pokemon").findOne({name : pokemonName});
+    const result = await client.db("pokemondb").collection("pokemon").findOne({"name" : pokemonName});
     console.log(`result: ${result}`);
     return result;
 }
