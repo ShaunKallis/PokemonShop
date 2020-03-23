@@ -9,7 +9,6 @@ const uri = "mongodb+srv://mRidge:duzSEpQQh4fTIqSm@cluster0-2dcbj.mongodb.net/te
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true});
 client.connect();
 
-
 app.set("view engine", "ejs");
 app.use(express.static("public")); //folder for images, css, js
 app.use(express.urlencoded()); // used to parse data sent using the POST method
@@ -18,7 +17,6 @@ app.use(express.urlencoded()); // used to parse data sent using the POST method
 app.use(session({ 
     secret: 'keyboard cat', 
     cookie: { maxAge: 6000000 }}))
-
 
 app.use(myMiddleware);
 function myMiddleware(req, res, next){
@@ -39,6 +37,26 @@ function isUserAuthenticated(req, res, next){
         res.redirect('/userLogin');
     } else {
         next();
+    }
+}
+
+function userLoginAttempt(username, password){
+    const result = client.db("userdb").collection("users").findOne({
+        "username": username,
+        "password": password
+    });
+    for(;;){
+        console.log(!(result instanceof Promise));
+        // if(!(result != null && typeof result.then === 'function')){
+        if(!(result instanceof Promise)){
+            break;
+        }
+    }
+    console.log(`found user: ${result}`);
+    if(result != null){
+        return true;
+    } else{
+        return false;
     }
 }
 
@@ -79,9 +97,14 @@ app.post("/adminLoginProcess", function(req, res) {
 });
 
 app.post("/userLoginProcess", function(req, res) {
-     if (req.body.username == "user" && req.body.password == "user") {
-       req.session.userAuthenticated = true;
-       res.send({"loginSuccess":true});
+    //  if (req.body.username == "user" && req.body.password == "user") {
+    //   req.session.userAuthenticated = true;
+    //   res.send({"loginSuccess":true});
+    const result = userLoginAttempt(req.body.username, req.body.password);
+    console.log(`result of login attempt: ${result}`);
+    if(result == true){
+        req.session.userAuthenticated = true;
+        res.send({"loginSuccess":true});
     } else {
        res.send(false);
     }
@@ -178,6 +201,7 @@ function insertProduct(body){
 }
 
 async function getProductList(){
+    
     console.log(`getProductList`);
     const result = await client.db("pokemondb").collection("pokemon").find().toArray();
     console.log(`number of pokemon in cluster: ${result.length}`);
@@ -204,9 +228,27 @@ function addToCart(productID){
     });//promise
 }
 
+async function createUser(username, password, email, bio){
+    console.log(`createUser called`);
+    const result = await client.db("userdb").collection("users").findOne({"username": username});
+    if(result != null){
+        // do something to signify error creating account
+        console.log(`user found with username: ${username}`);
+    } else{
+        const result = await client.db("userdb").collection("users").insertOne({
+            "username": username, 
+            "password": password,
+            "email": email,
+            "bio": bio
+        });
+        console.log(`user created with username: ${username}`);
+    }
+    return result;
+}
+
 async function getProductInfoAdmin(pokemonName){
     console.log(`Name: ${pokemonName}`);
-    const result = await client.db("pokemondb").collection("pokemon").findOne({name : pokemonName});
+    const result = await client.db("pokemondb").collection("pokemon").findOne({"name" : pokemonName});
     console.log(`result: ${result}`);
     return result;
 }
