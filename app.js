@@ -1,5 +1,8 @@
 const mysql = require("mysql")
 
+var sleep = require('sleep');
+
+
 const express = require("express");
 const app = express();
 const session = require('express-session');
@@ -40,25 +43,31 @@ function isUserAuthenticated(req, res, next){
     }
 }
 
-function userLoginAttempt(username, password){
-    // const result = client.db("userdb").collection("users").findOne({
-    //     "username": username,
-    //     "password": password
-    // });
-    // for(;;){
-    //     console.log(!(result instanceof Promise));
-    //     // if(!(result != null && typeof result.then === 'function')){
-    //     if(!(result instanceof Promise)){
-    //         break;
-    //     }
-    // }
-    // console.log(`found user: ${result}`);
-    // if(result != null){
-    //     return true;
-    // } else{
-    //     return false;
-    // }
-    return true;
+async function userLoginAttempt(username, password){
+    var result = await client.db("userdb").collection("users").findOne({
+        "username": username,
+        "password": password
+    });
+    console.log(`user found: ${result}`);
+    if(result != null){
+        return true;
+    } else{
+        return false;
+    }
+}
+
+async function adminLoginAttempt(username, password){
+    var result = await client.db("userdb").collection("users").findOne({
+        "username": username,
+        "password": password,
+        "admin": true
+    });
+    console.log(`admin found: ${result}`);
+    if(result != null){
+        return true;
+    } else{
+        return false;
+    }
 }
 
 //routes
@@ -89,26 +98,27 @@ app.get("/admin", isAdminAuthenticated, async function(req, res){
 });
 
 app.post("/adminLoginProcess", function(req, res) {
-     if (req.body.username == "admin" && req.body.password == "admin") {
-       req.session.adminAuthenticated = true;
-       res.send({"loginSuccess":true});
-    } else {
-       res.send(false);
-    }
+    adminLoginAttempt(req.body.username, req.body.password).then(result =>{
+        console.log(`result of login attempt: ${result}`);
+        if(result == true){
+            req.session.adminAuthenticated = true;
+            res.send({"loginSuccess":true});
+        } else {
+           res.send(false);
+        }
+    });
 });
 
 app.post("/userLoginProcess", function(req, res) {
-    //  if (req.body.username == "user" && req.body.password == "user") {
-    //   req.session.userAuthenticated = true;
-    //   res.send({"loginSuccess":true});
-    const result = userLoginAttempt(req.body.username, req.body.password);
-    console.log(`result of login attempt: ${result}`);
-    if(result == true){
-        req.session.userAuthenticated = true;
-        res.send({"loginSuccess":true});
-    } else {
-       res.send(false);
-    }
+    userLoginAttempt(req.body.username, req.body.password).then(result =>{
+        console.log(`result of login attempt: ${result}`);
+        if(result == true){
+            req.session.userAuthenticated = true;
+            res.send({"loginSuccess":true});
+        } else {
+           res.send(false);
+        }
+    });
 });
 
 app.post("/addToCart", isUserAuthenticated, async function(req, res){
