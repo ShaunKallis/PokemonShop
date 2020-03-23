@@ -41,23 +41,24 @@ function isUserAuthenticated(req, res, next){
 }
 
 function userLoginAttempt(username, password){
-    const result = client.db("userdb").collection("users").findOne({
-        "username": username,
-        "password": password
-    });
-    for(;;){
-        console.log(!(result instanceof Promise));
-        // if(!(result != null && typeof result.then === 'function')){
-        if(!(result instanceof Promise)){
-            break;
-        }
-    }
-    console.log(`found user: ${result}`);
-    if(result != null){
-        return true;
-    } else{
-        return false;
-    }
+    // const result = client.db("userdb").collection("users").findOne({
+    //     "username": username,
+    //     "password": password
+    // });
+    // for(;;){
+    //     console.log(!(result instanceof Promise));
+    //     // if(!(result != null && typeof result.then === 'function')){
+    //     if(!(result instanceof Promise)){
+    //         break;
+    //     }
+    // }
+    // console.log(`found user: ${result}`);
+    // if(result != null){
+    //     return true;
+    // } else{
+    //     return false;
+    // }
+    return true;
 }
 
 //routes
