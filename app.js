@@ -387,12 +387,36 @@ app.get("/profilePage", async function(req, res) {
 //Create Account POST
 app.post("/index", function(req, res){
     //Add data from form into, DB
+    var tempName = req.body.username;
+    var tempPass = req.body.password;
+    var tempEmail = req.body.email;
+    
+    //createUser(tempName, tempPass, tempEmail)
     //Redirect to Main Page
-    res.redirect("/index")
+    res.redirect("/")
 })
 
+//Micheals Function
+async function createUser(username, password, email, bio){
+    console.log(`createUser called`);
+    const result = await client.db("userdb").collection("users").findOne({"username": username});
+    if(result != null){
+        // do something to signify error creating account
+        console.log(`user found with username: ${username}`);
+    } else{
+        const result = await client.db("userdb").collection("users").insertOne({
+            "username": username, 
+            "password": password,
+            "email": email,
+            "bio": bio
+        });
+        console.log(`user created with username: ${username}`);
+    }
+    return result;
+}
+
 //Create Account Route
-app.get("/createAccount", async function(req, res){
+app.get("/createAccount", function(req, res){
     res.render("createAccount.ejs")
 })
 
