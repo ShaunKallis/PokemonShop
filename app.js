@@ -86,6 +86,7 @@ app.get("/adminLogin", async function(req, res)
 });
 
 
+
 // from lab 10, admin side of page
 app.get("/admin", isAdminAuthenticated, async function(req, res){
     console.log("authenticated: ", req.session.authenticated);
@@ -120,6 +121,8 @@ app.post("/userLoginProcess", function(req, res) {
         }
     });
 });
+
+//
 
 app.post("/addToCart", isUserAuthenticated, async function(req, res){
     let rows = await addToCart(req.body.product);
@@ -355,6 +358,32 @@ app.get("/products", isUserAuthenticated, async function(req, res){
   res.render("products", {"records":rows});
 
 });//product
+
+app.get("/productDetails/:id", async function(req, res){
+    const record = await client.db("pokemondb").collection("pokemon").findOne({name: req.params.id});
+    console.log(record);
+    res.render("productDetails", {"record": record})
+
+});//productDetails
+
+//Route for User Profile Page
+app.get("/profilePage", async function(req, res) {
+    const userProf =  await client.db("userdb").collection("users").findOne({name: req.params.id});
+    console.log(userProf);
+    res.render("profilePage", {"userProf": userProf})
+})
+
+//Create Account POST
+app.post("/index", function(req, res){
+    //Add data from form into, DB
+    //Redirect to Main Page
+    res.redirect("/index")
+})
+
+//Create Account Route
+app.get("/createAccount", async function(req, res){
+    res.render("createAccount.ejs")
+})
 
 app.get("/productInfo", isUserAuthenticated, async function(req, res){
     

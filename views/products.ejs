@@ -38,6 +38,55 @@
             }); //document.ready
     </script>
     </head>
+    <nav class="navbar navbar-default">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="/searchProduct">Back</a>
+                    <a class="navbar-brand" href="/cart">Cart</a>
+                    <a class="navbar-brand" href="/logout">Logout</a>
+                </div>
+            </div>
+    </nav>
+    
+    <!--<header class="jumbotron">-->
+    <!--        <div class="container">-->
+    <!--            <h1>Searched Pokemon</h1>-->
+    <!--            <p>Current Listings</p>-->
+    <!--        </div>-->
+    <!--</header>-->
+    
+            <div class="container">
+                <h1>Searched Pokemon</h1>
+                <p>Current Listings</p>
+            </div>
+    
+    
+    
+    
+    <div class="row" style="display:flex; flex-wrap: wrap;">
+        <% records.forEach( function(record){ %>
+            <div class="col-md-3 col-sm-6">
+                <div class="thumbnail">
+                    <img src = <%= record.imageURL %> >
+                    <div class="caption">
+                        <h4><%= record.name %></h4>
+                    </div>
+                    <div>
+                        Quantity Available: <%=record.quantity%><br>
+                        Price: $<%=record.price%><br>
+                        <div class="w3-show-inline-block">
+                        <div class="w3-bar">
+                            <a href="/productDetails/<%= record.name %>" class="btn btn-primary">Info</a>
+                            <button id="<%= record._id %>" class="add">Add</button>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+    
+    <br>
     
     <body>
         
@@ -47,15 +96,20 @@
         
             <img src = <%= record.imageURL %> width = 300px height = 250px> <br>
             <i><%= record.name %></i> <br>
-            Number: <%=record.pokemonID%><br>
-            Height: <%=record.height%><br>
-            Weight: <%=record.weight%><br>
+            <!--Number: <%=record.pokemonID%><br>-->
+            <!--Height: <%=record.height%><br>-->
+            <!--Weight: <%=record.weight%><br>-->
             Quantity Available: <%=record.quantity%><br>
-            Types: <%=record.type1%><br>
+            <!--Types: <%=record.type1%><br>-->
             Price: $<%=record.price%><br>
+            <!--Testing-->
+            <p>
+                <a href="/productDetails/<%= record.name %>" class="btn btn-primary">Info</a>
+            </p>
             <button id="<%= record._id %>" class="add"> Add to cart </button>
             <br><br>
         <% })  %>
+        
         
         <form action="/cart">
         <button> Go to cart </button>
