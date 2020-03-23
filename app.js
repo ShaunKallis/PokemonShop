@@ -145,8 +145,12 @@ app.get("/addProduct", isAdminAuthenticated, function(req, res){
 });
 app.post("/addProduct", isAdminAuthenticated, async function(req, res){
     const newPokemon = req.body;
-    const result = await client.db("pokemondb").collection("pokemon").insertOne(newPokemon);
-    console.log(result);
+    const result = await insertProduct(newPokemon);
+    console.log(`Pokemon added: ${result}`);
+    if(!result){
+        console.log("Pokemon's name: " + newPokemon.name);
+        return res.redirect("updateProduct?pokemonName=" + newPokemon.name);
+    } 
 });
 app.get("/updateProduct", isAdminAuthenticated, async function(req, res){
     if (req.session.adminAuthenticated){ 
@@ -191,24 +195,15 @@ app.get("/adminStats", isAdminAuthenticated, function(req, res){
 
 
 // FUNCTIONS
-function insertProduct(body){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            let sql = `INSERT INTO products 
-                        (productName, category, description, amtRemaining, price, imageURL) 
-                        VALUES (?,?,?,?,?,?)`;            // UPDATE HERE
-            let params = [body.productName, body.category, body.description, body.amtRemaining, body.price, body.imageURL]; //in DB it's sex but on our site its gender
-            conn.query(sql, params, function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-           });
-        });//connect
-    });//promise
+async function insertProduct(body){
+    if(await client.db("pokemondb").collection("pokemon").findOne({name: body.name})){
+        console.log(`${body.name} already in database`);
+        return false;
+    } else{
+        const result = await client.db("pokemondb").collection("pokemon").insertOne(body);
+        console.log(`${body.name} inserted in database`);
+        return true;
+    }
 }
 
 async function getProductList(){
