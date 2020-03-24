@@ -3,6 +3,7 @@ const mysql = require("mysql")
 var sleep = require('sleep');
 
 const request = require("request");
+var cookieParser = require('cookie-parser')
 
 const express = require("express");
 const app = express();
@@ -12,6 +13,8 @@ const MongoClient = require('mongodb').MongoClient;
 const uri = "mongodb+srv://mRidge:duzSEpQQh4fTIqSm@cluster0-2dcbj.mongodb.net/test?retryWrites=true&w=majority";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true});
 client.connect();
+
+app.use(cookieParser());
 
 app.set("view engine", "ejs");
 app.use(express.static("public")); //folder for images, css, js
@@ -27,6 +30,7 @@ function myMiddleware(req, res, next){
     console.log(new Date());
     next(); // passes control to back to server to do the next thing.
 }
+
 
 function isAdminAuthenticated(req, res, next){
     if(!req.session.adminAuthenticated){
@@ -115,6 +119,9 @@ app.post("/userLoginProcess", function(req, res) {
     userLoginAttempt(req.body.username, req.body.password).then(result =>{
         console.log(`result of login attempt: ${result}`);
         if(result == true){
+            console.log(req.body.username);
+            req.session.name = req.body.username;
+            console.log(req.session.name);
             req.session.userAuthenticated = true;
             res.send({"loginSuccess":true});
         } else {
@@ -123,7 +130,30 @@ app.post("/userLoginProcess", function(req, res) {
     });
 });
 
-//
+//Johnny Cookie Functions
+function setCookie(name,value,days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0;i < ca.length;i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+}
+function eraseCookie(name) {   
+    document.cookie = name+'=; Max-Age=-99999999;';  
+}
+
 
 app.post("/addToCart", isUserAuthenticated, async function(req, res){
     const result = await addToCart("user", req.body.pokemonName, req.body.quantityChosen);
@@ -344,6 +374,7 @@ app.get("/cart", isUserAuthenticated, async function(req, res){
   let items = await getCart();
 //   console.log(items);
   let total = 0;
+
   if(items != null){
       items.forEach(function(item){
           total += item[1]*item[2]
@@ -352,6 +383,7 @@ app.get("/cart", isUserAuthenticated, async function(req, res){
   } else{  
     res.render("cart", {"items":[,,], "total":total});
   }
+
 });
 
 app.get("/checkout", isUserAuthenticated, async function(req, res){
@@ -370,7 +402,8 @@ app.get("/products", isUserAuthenticated, async function(req, res){
 });//product
 
 app.get("/productDetails/:id", async function(req, res){
-    const record = await client.db("pokemondb").collection("pokemon").findOne({name: req.params.id});
+    var cUser = req.session.name;
+    const record = await client.db("pokemondb").collection("pokemon").findOne({username: cUser});
     console.log(record);
     res.render("productDetails", {"record": record})
 
@@ -378,7 +411,10 @@ app.get("/productDetails/:id", async function(req, res){
 
 //Route for User Profile Page
 app.get("/profilePage", async function(req, res) {
-    const userProf =  await client.db("userdb").collection("users").findOne({name: req.params.id});
+    //var cUser = req.cookie.cookieUser;
+    var cUser = req.session.name;
+    console.log(cUser);
+    const userProf =  await client.db("userdb").collection("users").findOne({username: cUser});
     console.log(userProf);
     res.render("profilePage", {"userProf": userProf})
 })
@@ -390,6 +426,9 @@ app.post("/index", function(req, res){
     var tempPass = req.body.password;
     var tempEmail = req.body.email;
     
+    console.log(tempName)
+    console.log(tempPass)
+    console.log(tempEmail)
     createUser(tempName, tempPass, tempEmail)
     //Redirect to Main Page
     res.redirect("/")
@@ -450,6 +489,7 @@ function getProductInfo(productID){
     });//promise
     
 }
+
 async function getProduct(pokemonName){
     var result;
     console.log(`getProduct run`);
@@ -458,6 +498,7 @@ async function getProduct(pokemonName){
     }else{
         result = await client.db("pokemondb").collection("pokemon").find({name: pokemonName}).toArray();
     }
+
     console.log(result);
     return result;
 }//getproduct
@@ -488,7 +529,6 @@ function getCategories(){
 }//getCategories
 
 async function getCart(cartId){
-    // const result = await client.db("userdb").collection("carts").find(cartId);
     const result = await client.db("userdb").collection("users").findOne({"username": "user"});
     console.log(`getCart: ${result}`);
     return result.cart;
@@ -515,6 +555,7 @@ function getPokemon(keyword){
         });//request
     });
 }
+
 
 //values in red must be updated
 function dbConnection(){
