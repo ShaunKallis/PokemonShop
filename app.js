@@ -126,7 +126,7 @@ app.post("/userLoginProcess", function(req, res) {
 //
 
 app.post("/addToCart", isUserAuthenticated, async function(req, res){
-    const result = await addToCart("user", req.body.pokemonName);
+    const result = await addToCart("user", req.body.pokemonName, req.body.quantityChosen);
     console.log(`added to cart`);
 })
 
@@ -223,14 +223,15 @@ async function getProductList(){
     return result;
 }
 
-async function addToCart(username, pokemonName){
+async function addToCart(username, pokemonName, quantityChosen){
+    quantityChosen = parseInt(quantityChosen);
     var pokemon = await client.db("pokemondb").collection("pokemon").findOne({"name": pokemonName});
     
     var result = await client.db("userdb").collection("users").findOne({"username": "user"});
     console.log(result);
     if(result.cart == null){
         console.log("empty array")
-        result.cart = [[pokemonName, pokemon.price, 1]];
+        result.cart = [[pokemonName, pokemon.price, quantityChosen]];
     }else{
         var index;
         var found = false;
@@ -241,10 +242,10 @@ async function addToCart(username, pokemonName){
             }
         }
         if(found){
-            result.cart[index][2]++;
+            result.cart[index][2] += quantityChosen;
         }
         else{
-            result.cart[result.cart.length] = [pokemonName, pokemon.price, 1];
+            result.cart[result.cart.length] = [pokemonName, pokemon.price, quantityChosen];
         }
     }
     console.log(`new cart: `);

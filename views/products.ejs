@@ -23,21 +23,22 @@
     //             });//ajax
     //         })
     // });
-            $(document).ready(function() {
-                $(".add").on("click", function(){
-                    $.ajax({
-                        method: "POST",
-                        url: "/addToCart",
-                        dataType: "json",
-                        data: { "pokemonName":this.id},
-                        success: function(result,status) {
-                            alert(result["message"]);
-                        }
-                    });//ajax
-                }); //click
-            }); //document.ready
-    </script>
-    </head>
+    
+    $(document).ready(function() {
+        $(".add").on("click", function(){
+            $.ajax({
+                method: "POST",
+                url: "/addToCart",
+                dataType: "json",
+                data: { "pokemonName":this.id, "quantityChosen":document.getElementById("quantityChosen" + this.id).value},
+                success: function(result,status) {
+                    alert(result["message"]);
+                }
+            });//ajax
+        }); //click
+    }); //document.ready
+</script>
+</head>
     <nav class="navbar navbar-default">
             <div class="container-fluid">
                 <div class="navbar-header">
@@ -78,6 +79,7 @@
                         <div class="w3-bar">
                             <a href="/productDetails/<%= record.name %>" class="btn btn-primary">Info</a>
                             <button id="<%= record.name %>" class="add">Add</button>
+                            <input type="number" id="quantityChosen<%=record.name%>" min="0" max="<%= record.quantity %>" value="0" onkeydown="return false"/>
                         </div>
                         </div>
                     </div>
