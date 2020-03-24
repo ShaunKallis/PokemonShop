@@ -296,23 +296,8 @@ async function deleteProduct(pokemonName){
     return result;
 }
 
-function clearCart(productID){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            let sql = `DELETE FROM cartItems 
-                        WHERE cartID = ?`;
-            let params = [1]; 
-            conn.query(sql, params, function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-           });
-        });//connect
-    });//promise
+async function clearCart(productID){
+    const result = await client.db("userdb").collection("users").updateOne({"username": "user"}, {$unset: {cart: null}});
 }
 
 function getStats(command){
@@ -359,11 +344,14 @@ app.get("/cart", isUserAuthenticated, async function(req, res){
   let items = await getCart();
 //   console.log(items);
   let total = 0;
-  items.forEach(function(item){
-      total += item[1]*item[2]
-  })
-  res.render("cart", {"items":items[0], "total":total});
-
+  if(items != null){
+      items.forEach(function(item){
+          total += item[1]*item[2]
+      })
+    res.render("cart", {"items":items, "total":total});
+  } else{  
+    res.render("cart", {"items":[,,], "total":total});
+  }
 });
 
 app.get("/checkout", isUserAuthenticated, async function(req, res){
@@ -496,9 +484,9 @@ function getCategories(){
 
 async function getCart(cartId){
     // const result = await client.db("userdb").collection("carts").find(cartId);
-    const result = await client.db("userdb").collection("carts").find({_id: "5e71796d38d2f623fd9723ed"})
-    console.log(`getCart: ${result.item1}`);
-    return result;
+    const result = await client.db("userdb").collection("users").findOne({"username": "user"});
+    console.log(`getCart: ${result}`);
+    return result.cart;
 }
 
 function getPokemon(keyword){
