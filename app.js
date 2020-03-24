@@ -434,7 +434,7 @@ app.post("/index", function(req, res){
     console.log(tempPass)
     console.log(tempEmail)
     
-    //createUser(tempName, tempPass, tempEmail)
+    createUser(tempName, tempPass, tempEmail)
     //Redirect to Main Page
     res.redirect("/")
 })
