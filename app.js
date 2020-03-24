@@ -511,29 +511,6 @@ function getPokemon(keyword){
     });
 }
 
-// function getCart(){
-    
-//     let conn = dbConnection();
-    
-//     return new Promise(function(resolve, reject){
-//         conn.connect(function(err) {
-//           if (err) throw err;
-//           console.log("Connected!");
-        
-//           let sql = `select productID, quantity, productName, price from users natural join cart natural join cartItems natural join products where userID = "2"`;
-        
-//           conn.query(sql, function (err, rows, fields) {
-//               if (err) throw err;
-//               //res.send(rows);
-//               conn.end();
-//               resolve(rows);
-//           });
-        
-//         });//connect
-//     });//promise
-    
-// }//getCart
-
 //values in red must be updated
 function dbConnection(){
   let conn = mysql.createConnection({
