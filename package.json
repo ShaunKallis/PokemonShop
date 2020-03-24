@@ -23,6 +23,7 @@
     "express-session": "^1.17.0",
     "mongodb": "^3.5.5",
     "mysql": "^2.18.1",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "sleep": "^6.1.0"
   }
 }

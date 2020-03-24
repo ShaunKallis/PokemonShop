@@ -156,14 +156,8 @@ function eraseCookie(name) {
 
 
 app.post("/addToCart", isUserAuthenticated, async function(req, res){
-    let rows = await addToCart(req.body.product);
-    console.log(rows);
-    // res.send("First Name: " + req.body.firstName);  //When POST method info is stored in req.body
-    if (rows.affectedRows > 0) {
-        res.send({message:"Success!"})
-    } else {
-        res.send({message:"Failure!"})
-    }
+    const result = await addToCart("user", req.body.pokemonName, req.body.quantityChosen);
+    console.log(`added to cart`);
 })
 
 app.get("/logout", function(req, res){
@@ -259,29 +253,41 @@ async function getProductList(){
     return result;
 }
 
-function addToCart(productID){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            //TODO watch out
-            let sql = `INSERT INTO cartItems 
-                        (cartID, productID, quantity, priceAtPurchase) 
-                        VALUES (?,?,?,?)`;
-            conn.query(sql, [1, productID, 1, 0], function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-          });
-        });//connect
-    });//promise
-}
-
-// async function addToCart(pokemonName, quantity){
+async function addToCart(username, pokemonName, quantityChosen){
+    quantityChosen = parseInt(quantityChosen);
+    var pokemon = await client.db("pokemondb").collection("pokemon").findOne({"name": pokemonName});
     
-// }
+    var result = await client.db("userdb").collection("users").findOne({"username": "user"});
+    console.log(result);
+    if(result.cart == null){
+        console.log("empty array")
+        result.cart = [[pokemonName, pokemon.price, quantityChosen]];
+    }else{
+        var index;
+        var found = false;
+        for(index = 0; index < result.cart.length; index++){
+            if(result.cart[index][0] == pokemonName){
+                found = true;
+                break;
+            }
+        }
+        if(found){
+            result.cart[index][2] += quantityChosen;
+        }
+        else{
+            result.cart[result.cart.length] = [pokemonName, pokemon.price, quantityChosen];
+        }
+    }
+    console.log(`new cart: `);
+    var index;
+    for (index = 0; index < result.cart.length; index++) { 
+        console.log(result.cart[index]); 
+    } 
+    result = await client.db("userdb").collection("users").updateOne(
+        {"username": "user"},
+        {$set: {"cart": result.cart}
+        });
+}
 
 async function createUser(username, password, email, bio){
     console.log(`createUser called`);
@@ -320,23 +326,8 @@ async function deleteProduct(pokemonName){
     return result;
 }
 
-function clearCart(productID){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            let sql = `DELETE FROM cartItems 
-                        WHERE cartID = ?`;
-            let params = [1]; 
-            conn.query(sql, params, function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-           });
-        });//connect
-    });//promise
+async function clearCart(productID){
+    const result = await client.db("userdb").collection("users").updateOne({"username": "user"}, {$unset: {cart: null}});
 }
 
 function getStats(command){
@@ -383,10 +374,15 @@ app.get("/cart", isUserAuthenticated, async function(req, res){
   let items = await getCart();
 //   console.log(items);
   let total = 0;
-  items.forEach(function(item){
-      total += item[1]*item[2]
-  })
-  res.render("cart", {"items":items[0], "total":total});
+
+  if(items != null){
+      items.forEach(function(item){
+          total += item[1]*item[2]
+      })
+    res.render("cart", {"items":items, "total":total});
+  } else{  
+    res.render("cart", {"items":[,,], "total":total});
+  }
 
 });
 
@@ -400,7 +396,7 @@ app.get("/checkout", isUserAuthenticated, async function(req, res){
 
 // from lab 9 user side of page
 app.get("/products", isUserAuthenticated, async function(req, res){
-  let rows = await getProduct(req.query);
+  let rows = await getProduct(req.query.keyword);
   res.render("products", {"records":rows});
 
 });//product
@@ -433,7 +429,6 @@ app.post("/index", function(req, res){
     console.log(tempName)
     console.log(tempPass)
     console.log(tempEmail)
-    
     createUser(tempName, tempPass, tempEmail)
     //Redirect to Main Page
     res.redirect("/")
@@ -494,9 +489,16 @@ function getProductInfo(productID){
     });//promise
     
 }
-async function getProduct(){
+
+async function getProduct(pokemonName){
+    var result;
     console.log(`getProduct run`);
-    const result = await client.db("pokemondb").collection("pokemon").find().toArray();
+    if(pokemonName == ''){
+        result = await client.db("pokemondb").collection("pokemon").find().toArray();
+    }else{
+        result = await client.db("pokemondb").collection("pokemon").find({name: pokemonName}).toArray();
+    }
+
     console.log(result);
     return result;
 }//getproduct
@@ -527,10 +529,9 @@ function getCategories(){
 }//getCategories
 
 async function getCart(cartId){
-    // const result = await client.db("userdb").collection("carts").find(cartId);
-    const result = await client.db("userdb").collection("carts").find({_id: "5e71796d38d2f623fd9723ed"})
-    console.log(`getCart: ${result.item1}`);
-    return result;
+    const result = await client.db("userdb").collection("users").findOne({"username": "user"});
+    console.log(`getCart: ${result}`);
+    return result.cart;
 }
 
 function getPokemon(keyword){
@@ -555,28 +556,6 @@ function getPokemon(keyword){
     });
 }
 
-// function getCart(){
-    
-//     let conn = dbConnection();
-    
-//     return new Promise(function(resolve, reject){
-//         conn.connect(function(err) {
-//           if (err) throw err;
-//           console.log("Connected!");
-        
-//           let sql = `select productID, quantity, productName, price from users natural join cart natural join cartItems natural join products where userID = "2"`;
-        
-//           conn.query(sql, function (err, rows, fields) {
-//               if (err) throw err;
-//               //res.send(rows);
-//               conn.end();
-//               resolve(rows);
-//           });
-        
-//         });//connect
-//     });//promise
-    
-// }//getCart
 
 //values in red must be updated
 function dbConnection(){
