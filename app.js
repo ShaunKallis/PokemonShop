@@ -126,14 +126,8 @@ app.post("/userLoginProcess", function(req, res) {
 //
 
 app.post("/addToCart", isUserAuthenticated, async function(req, res){
-    let rows = await addToCart(req.body.product);
-    console.log(rows);
-    // res.send("First Name: " + req.body.firstName);  //When POST method info is stored in req.body
-    if (rows.affectedRows > 0) {
-        res.send({message:"Success!"})
-    } else {
-        res.send({message:"Failure!"})
-    }
+    const result = await addToCart("user", req.body.pokemonName);
+    console.log(`added to cart`);
 })
 
 app.get("/logout", function(req, res){
@@ -229,29 +223,40 @@ async function getProductList(){
     return result;
 }
 
-function addToCart(productID){
-    let conn = dbConnection();
-    return new Promise(function(resolve, reject){
-        conn.connect(function(err) {
-            if (err) throw err;
-            console.log("Connected!");
-            //TODO watch out
-            let sql = `INSERT INTO cartItems 
-                        (cartID, productID, quantity, priceAtPurchase) 
-                        VALUES (?,?,?,?)`;
-            conn.query(sql, [1, productID, 1, 0], function (err, rows, fields) {
-              if (err) throw err;
-              //res.send(rows);
-              conn.end();
-              resolve(rows);
-          });
-        });//connect
-    });//promise
-}
-
-// async function addToCart(pokemonName, quantity){
+async function addToCart(username, pokemonName){
+    var pokemon = await client.db("pokemondb").collection("pokemon").findOne({"name": pokemonName});
     
-// }
+    var result = await client.db("userdb").collection("users").findOne({"username": "user"});
+    console.log(result);
+    if(result.cart == null){
+        console.log("empty array")
+        result.cart = [[pokemonName, pokemon.price, 1]];
+    }else{
+        var index;
+        var found = false;
+        for(index = 0; index < result.cart.length; index++){
+            if(result.cart[index][0] == pokemonName){
+                found = true;
+                break;
+            }
+        }
+        if(found){
+            result.cart[index][2]++;
+        }
+        else{
+            result.cart[result.cart.length] = [pokemonName, pokemon.price, 1];
+        }
+    }
+    console.log(`new cart: `);
+    var index;
+    for (index = 0; index < result.cart.length; index++) { 
+        console.log(result.cart[index]); 
+    } 
+    result = await client.db("userdb").collection("users").updateOne(
+        {"username": "user"},
+        {$set: {"cart": result.cart}
+        });
+}
 
 async function createUser(username, password, email, bio){
     console.log(`createUser called`);

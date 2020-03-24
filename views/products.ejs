@@ -29,7 +29,7 @@
                         method: "POST",
                         url: "/addToCart",
                         dataType: "json",
-                        data: { "product":this.id},
+                        data: { "pokemonName":this.id},
                         success: function(result,status) {
                             alert(result["message"]);
                         }
@@ -77,7 +77,7 @@
                         <div class="w3-show-inline-block">
                         <div class="w3-bar">
                             <a href="/productDetails/<%= record.name %>" class="btn btn-primary">Info</a>
-                            <button id="<%= record._id %>" class="add">Add</button>
+                            <button id="<%= record.name %>" class="add">Add</button>
                         </div>
                         </div>
                     </div>
