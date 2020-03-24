@@ -406,7 +406,7 @@ app.get("/products", isUserAuthenticated, async function(req, res){
 });//product
 
 app.get("/productDetails/:id", async function(req, res){
-    cUser = req.session.name;
+    var cUser = req.session.name;
     const record = await client.db("pokemondb").collection("pokemon").findOne({username: cUser});
     console.log(record);
     res.render("productDetails", {"record": record})
@@ -429,6 +429,10 @@ app.post("/index", function(req, res){
     var tempName = req.body.username;
     var tempPass = req.body.password;
     var tempEmail = req.body.email;
+    
+    console.log(tempName)
+    console.log(tempPass)
+    console.log(tempEmail)
     
     createUser(tempName, tempPass, tempEmail)
     //Redirect to Main Page
