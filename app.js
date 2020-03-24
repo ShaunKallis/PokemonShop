@@ -364,7 +364,7 @@ app.get("/checkout", isUserAuthenticated, async function(req, res){
 
 // from lab 9 user side of page
 app.get("/products", isUserAuthenticated, async function(req, res){
-  let rows = await getProduct(req.query);
+  let rows = await getProduct(req.query.keyword);
   res.render("products", {"records":rows});
 
 });//product
@@ -450,9 +450,14 @@ function getProductInfo(productID){
     });//promise
     
 }
-async function getProduct(){
+async function getProduct(pokemonName){
+    var result;
     console.log(`getProduct run`);
-    const result = await client.db("pokemondb").collection("pokemon").find().toArray();
+    if(pokemonName == ''){
+        result = await client.db("pokemondb").collection("pokemon").find().toArray();
+    }else{
+        result = await client.db("pokemondb").collection("pokemon").find({name: pokemonName}).toArray();
+    }
     console.log(result);
     return result;
 }//getproduct
