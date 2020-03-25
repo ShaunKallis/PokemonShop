@@ -87,31 +87,6 @@
             </div>
         <% }) %>
     </div>
-    
-    <br>
-    
-    <body>
-        
-        <h1> Products Found:  </h1>
-
-        <% records.forEach( function(record){ %> 
-        
-            <img src = <%= record.imageURL %> width = 300px height = 250px> <br>
-            <i><%= record.name %></i> <br>
-            <!--Number: <%=record.pokemonID%><br>-->
-            <!--Height: <%=record.height%><br>-->
-            <!--Weight: <%=record.weight%><br>-->
-            Quantity Available: <%=record.quantity%><br>
-            <!--Types: <%=record.type1%><br>-->
-            Price: $<%=record.price%><br>
-            <!--Testing-->
-            <p>
-                <a href="/productDetails/<%= record.name %>" class="btn btn-primary">Info</a>
-            </p>
-            <button id="<%= record._id %>" class="add"> Add to cart </button>
-            <br><br>
-        <% })  %>
-        
         
         <form action="/cart">
         <button> Go to cart </button>
