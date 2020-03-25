@@ -3,7 +3,7 @@ const mysql = require("mysql")
 var sleep = require('sleep');
 
 const request = require("request");
-var cookieParser = require('cookie-parser')
+var cookieParser = require('cookie-parser');
 
 const express = require("express");
 const app = express();
@@ -156,7 +156,7 @@ function eraseCookie(name) {
 
 
 app.post("/addToCart", isUserAuthenticated, async function(req, res){
-    const result = await addToCart("user", req.body.pokemonName, req.body.quantityChosen);
+    const result = await addToCart(req.session.name, req.body.pokemonName, req.body.quantityChosen);
     console.log(`added to cart`);
 })
 
@@ -209,13 +209,14 @@ app.post("/updateProduct", isAdminAuthenticated, async function(req, res){
         {$set: updatedPokemon}
     );
     console.log(`result for post: ${result}`);
+    res.redirect('/admin');
 });
 app.get("/deleteProduct", isAdminAuthenticated, async function(req, res){
     let result = await deleteProduct(req.query.pokemonName);
     console.log(result);
     let message = "Product WAS NOT deleted!";
     if (result.deletedCount > 0) {
-        message = "Product successfully deleted!";   
+        message = "Product successfully deleted!";
         }
     let productList = await getProductList();
     res.render("admin", {"productList":productList});
@@ -257,10 +258,11 @@ async function addToCart(username, pokemonName, quantityChosen){
     quantityChosen = parseInt(quantityChosen);
     var pokemon = await client.db("pokemondb").collection("pokemon").findOne({"name": pokemonName});
     
-    var result = await client.db("userdb").collection("users").findOne({"username": "user"});
+    var result = await client.db("userdb").collection("users").findOne({"username": username});
     console.log(result);
     if(result.cart == null){
-        console.log("empty array")
+        console.log("empty array");
+        console.log(pokemon);
         result.cart = [[pokemonName, pokemon.price, quantityChosen]];
     }else{
         var index;
@@ -284,7 +286,7 @@ async function addToCart(username, pokemonName, quantityChosen){
         console.log(result.cart[index]); 
     } 
     result = await client.db("userdb").collection("users").updateOne(
-        {"username": "user"},
+        {"username": username},
         {$set: {"cart": result.cart}
         });
 }
@@ -326,8 +328,17 @@ async function deleteProduct(pokemonName){
     return result;
 }
 
-async function clearCart(productID){
-    const result = await client.db("userdb").collection("users").updateOne({"username": "user"}, {$unset: {cart: null}});
+async function clearCart(username){
+    var user = await client.db("userdb").collection("users").findOne({"username": username});
+    var index;
+    for(index = 0; index < user.cart.length; index++){
+        pokemonName = user.cart[index][0];
+        var pokemon = await client.db("pokemondb").collection("pokemon").findOne({"name": user.cart[index][0]});
+        pokemon.quantity -= user.cart[index][2];
+        await client.db("pokemondb").collection("pokemon").updateOne({"name": pokemon.name}, {$set: {"quantity": pokemon.quantity}});
+    }
+    
+    result = await client.db("userdb").collection("users").updateOne({"username": username}, {$unset: {cart: null}});
 }
 
 function getStats(command){
@@ -371,7 +382,7 @@ app.get("/searchProduct", isUserAuthenticated, async function(req, res){
 
 app.get("/cart", isUserAuthenticated, async function(req, res){
 //   console.log("happens")
-  let items = await getCart();
+  let items = await getCart(req.session.name);
 //   console.log(items);
   let total = 0;
 
@@ -388,7 +399,7 @@ app.get("/cart", isUserAuthenticated, async function(req, res){
 
 app.get("/checkout", isUserAuthenticated, async function(req, res){
 
-  let categories = await clearCart();
+  let categories = await clearCart(req.session.name);
   //console.log(categories);
   res.render("checkout", {"categories":categories});
 
@@ -402,10 +413,9 @@ app.get("/products", isUserAuthenticated, async function(req, res){
 });//product
 
 app.get("/productDetails/:id", async function(req, res){
-    var cUser = req.session.name;
-    const record = await client.db("pokemondb").collection("pokemon").findOne({username: cUser});
+    const record = await client.db("pokemondb").collection("pokemon").findOne({name: req.params.id});
     console.log(record);
-    res.render("productDetails", {"record": record})
+    res.render("productDetails", {"record": record});
 
 });//productDetails
 
@@ -528,8 +538,8 @@ function getCategories(){
     
 }//getCategories
 
-async function getCart(cartId){
-    const result = await client.db("userdb").collection("users").findOne({"username": "user"});
+async function getCart(username){
+    const result = await client.db("userdb").collection("users").findOne({"username": username});
     console.log(`getCart: ${result}`);
     return result.cart;
 }
