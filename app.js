@@ -274,7 +274,7 @@ async function addToCart(username, pokemonName, quantityChosen){
             }
         }
         if(found){
-            result.cart[index][2] += quantityChosen;
+            result.cart[index][2] = quantityChosen;
         }
         else{
             result.cart[result.cart.length] = [pokemonName, pokemon.price, quantityChosen];
