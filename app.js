@@ -176,7 +176,8 @@ app.get("/addProduct", isAdminAuthenticated, async function(req, res){
                 keyword = req.query.keyword;
             }
         }
-        let parsedData = await getPokemon(keyword); 
+        keyword = keyword.toLowerCase();
+        let parsedData = await getPokemon(keyword);
         res.render("newProduct", {"parsedData":parsedData});
     }else{                                    //if user hasn't authenticated
         res.render("adminLogin");                  //send them to the login screen
